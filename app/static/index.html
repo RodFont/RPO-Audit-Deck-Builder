@@ -1,55 +1,1228 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>RPO Report Audit</title>
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 4rem auto; padding: 0 1rem; }
-    h1 { font-size: 1.4rem; }
-    form { display: flex; flex-direction: column; gap: 0.75rem; }
-    input, button { padding: 0.5rem; font-size: 1rem; }
-    button { cursor: pointer; }
-    #status { margin-top: 1rem; font-size: 0.9rem; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RPO Auditor Deck Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --navy: #1F2D3A;
+    --amber: #F2A33A;
+    --amber-dark: #9A5B0C;
+    --amber-bg: #FDF1DF;
+    --green: #2E9E6B;
+    --green-bg: #E8F5EE;
+    --green-text: #237A52;
+    --red: #D64545;
+    --red-bg: #FBEAEA;
+    --red-text: #B83232;
+    --amber-warn-bg: #FCF4E1;
+    --amber-warn-text: #5C3D00;
+    --blue-text: #2F66A8;
+    --bg: #F4F6F8;
+    --card-bg: #FFFFFF;
+    --border: #E3E7EB;
+    --track: #F1F3F5;
+    --dash: #C5CDD5;
+    --text: #17212B;
+    --text-secondary: #5B6B7A;
+    --grey-outline: #C5CDD5;
+    --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+    --font-mono: 'IBM Plex Mono', 'SFMono-Regular', monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    overflow-x: hidden;
+  }
+
+  button, input {
+    font-family: inherit;
+  }
+
+  button:focus-visible,
+  input:focus-visible,
+  label:focus-within,
+  a:focus-visible {
+    outline: 2px solid var(--amber);
+    outline-offset: 2px;
+  }
+
+  /* ---------- Top bar ---------- */
+  .topbar {
+    height: 64px;
+    background: var(--navy);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+  }
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .brand-mark {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: var(--amber);
+    position: relative;
+    flex: none;
+  }
+  .brand-mark::after {
+    content: "";
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--navy);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .brand-name {
+    color: #FFFFFF;
+    font-size: 17px;
+    font-weight: 700;
+  }
+  .topbar-subtitle {
+    color: #A9B6C2;
+    font-size: 13px;
+  }
+  .btn-outline-topbar {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    color: #FFFFFF;
+    height: 40px;
+    padding: 0 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .btn-outline-topbar:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  /* ---------- Page layout ---------- */
+  .page {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 44px 16px 64px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  /* ---------- Progress bar ---------- */
+  .progress {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 4px 0 8px;
+  }
+  .progress-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .progress-circle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex: none;
+  }
+  .progress-circle.upcoming {
+    border: 2px solid var(--grey-outline);
+    color: var(--text-secondary);
+    background: transparent;
+  }
+  .progress-circle.active {
+    background: var(--navy);
+    color: #FFFFFF;
+  }
+  .progress-circle.done {
+    background: var(--green);
+    color: #FFFFFF;
+  }
+  .progress-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+  .progress-label.active,
+  .progress-label.done {
+    color: var(--text);
+  }
+  .progress-connector {
+    width: 48px;
+    height: 2px;
+    background: var(--grey-outline);
+    margin: 0 10px;
+  }
+  .progress-connector.done {
+    background: var(--green);
+  }
+
+  /* ---------- Card ---------- */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 32px;
+  }
+  @media (max-width: 480px) {
+    .card { padding: 22px; }
+  }
+
+  h1 {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 8px;
+    color: var(--text);
+  }
+  .subtitle {
+    font-size: 15px;
+    color: var(--text-secondary);
+    margin: 0 0 24px;
+    line-height: 1.5;
+  }
+
+  /* ---------- Dropzone ---------- */
+  .dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 10px;
+    border: 2px dashed var(--dash);
+    border-radius: 12px;
+    background: #FAFBFC;
+    padding: 36px 20px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .dropzone.dragover {
+    border-style: solid;
+    border-color: var(--amber);
+    background: var(--amber-bg);
+  }
+  .dropzone input[type="file"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    overflow: hidden;
+  }
+  .dropzone-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--amber-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--amber-dark);
+  }
+  .dropzone-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .dropzone-browse {
+    text-decoration: underline;
+    color: var(--navy);
+    font-weight: 500;
+  }
+  .dropzone-hint {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  /* ---------- File row ---------- */
+  .file-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: center;
+    width: 100%;
+  }
+  .file-icon {
+    color: var(--green);
+    flex: none;
+  }
+  .file-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 0;
+  }
+  .file-name {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 320px;
+  }
+  .file-size {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .file-remove {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    width: 32px;
+    height: 32px;
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+  }
+  .file-remove:hover {
+    background: var(--track);
+    color: var(--red-text);
+  }
+
+  /* ---------- Inline error ---------- */
+  .inline-error {
+    background: var(--red-bg);
+    color: var(--red-text);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    margin-top: 16px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  /* ---------- Form fields ---------- */
+  .fields-row {
+    display: flex;
+    gap: 16px;
+    margin-top: 24px;
+  }
+  @media (max-width: 560px) {
+    .fields-row { flex-direction: column; }
+  }
+  .field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .field label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .field input {
+    height: 46px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    padding: 0 14px;
+    font-size: 14px;
+    color: var(--text);
+    background: #FFFFFF;
+  }
+  .field input::placeholder {
+    color: #9AA7B2;
+  }
+
+  /* ---------- Buttons ---------- */
+  .actions-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 24px;
+    gap: 12px;
+  }
+  .btn-primary {
+    background: var(--navy);
+    color: #FFFFFF;
+    border: none;
+    height: 48px;
+    padding: 0 24px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-primary:disabled {
+    background: #A9B3BD;
+    cursor: not-allowed;
+  }
+  .btn-primary:not(:disabled):hover {
+    background: #16212B;
+  }
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    height: 48px;
+    padding: 0 24px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-outline:hover {
+    background: var(--track);
+  }
+  .link-button {
+    background: transparent;
+    border: none;
+    color: var(--navy);
+    text-decoration: underline;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 10px 2px;
+    min-height: 44px;
+  }
+
+  /* ---------- Feature tiles ---------- */
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  @media (max-width: 680px) {
+    .tiles { grid-template-columns: 1fr; }
+  }
+  .tile {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+  }
+  .tile-title {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+  .tile-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  /* ---------- Analyze state ---------- */
+  .analyze-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 14px;
+    padding: 24px 0;
+  }
+  .spinner {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 4px solid var(--track);
+    border-top-color: var(--amber);
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  .analyze-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .analyze-sub {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  /* ---------- Result header ---------- */
+  .result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .result-heading h1 { margin-bottom: 4px; }
+  .result-subline {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+  .result-subline .mono {
+    font-family: var(--font-mono);
+  }
+  .risk-pill {
+    border-radius: 999px;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    flex: none;
+  }
+  .risk-pill.high, .risk-pill.critical {
+    background: var(--red-bg);
+    color: var(--red-text);
+  }
+  .risk-pill.medium {
+    background: var(--amber-warn-bg);
+    color: #8A5A00;
+  }
+  .risk-pill.low {
+    background: var(--green-bg);
+    color: var(--green-text);
+  }
+
+  /* ---------- Stat tiles ---------- */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-top: 24px;
+  }
+  @media (max-width: 680px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  .stat-tile {
+    background: var(--bg);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .stat-number {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+  .stat-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  /* ---------- Warning callout ---------- */
+  .warning-callout {
+    background: var(--amber-warn-bg);
+    color: var(--amber-warn-text);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 14px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin-top: 20px;
+    line-height: 1.5;
+  }
+  .warning-callout svg { flex: none; margin-top: 2px; }
+
+  /* ---------- Result actions ---------- */
+  .result-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 24px;
+    align-items: center;
+  }
+
+  /* ---------- Sections/bars card ---------- */
+  .sections-card h2 {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0 0 18px;
+  }
+  .section-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .section-row:last-child { margin-bottom: 0; }
+  .section-name {
+    width: 220px;
+    max-width: 40%;
+    font-size: 14px;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: none;
+  }
+  .section-bar-track {
+    flex: 1;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--track);
+    overflow: hidden;
+  }
+  .section-bar-fill {
+    height: 100%;
+    background: var(--red);
+    border-radius: 999px;
+  }
+  .section-count {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    width: 28px;
+    text-align: right;
+    flex: none;
+  }
+
+  .hidden { display: none !important; }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+</style>
 </head>
 <body>
-  <h1>RPO Report Audit — Upload Report</h1>
-  <form id="f">
-    <input type="file" name="file" accept=".xlsx,.xlsm,.csv" required />
-    <input type="text" name="title" placeholder="Deck title (optional)" />
-    <input type="text" name="client" placeholder="Client name (optional)" />
-    <button type="submit">Generate audit deck</button>
-  </form>
-  <div id="status"></div>
-  <script>
-    const form = document.getElementById('f');
-    const statusEl = document.getElementById('status');
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      statusEl.textContent = 'Processing…';
-      const fd = new FormData(form);
-      const params = new URLSearchParams();
-      if (fd.get('title')) params.set('title', fd.get('title'));
-      if (fd.get('client')) params.set('client', fd.get('client'));
-      const body = new FormData();
-      body.append('file', fd.get('file'));
-      try {
-        const res = await fetch('/api/audit?' + params.toString(), { method: 'POST', body });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.detail || res.statusText);
-        }
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'audit_summary.zip';
-        a.click();
-        statusEl.textContent = 'Done. Download started.';
-      } catch (err) {
-        statusEl.textContent = 'Error: ' + err.message;
+
+<header class="topbar">
+  <div class="topbar-left">
+    <div class="brand-mark" aria-hidden="true"></div>
+    <span class="brand-name">RPO Auditor Deck Builder</span>
+  </div>
+  <span id="topbarSubtitle" class="topbar-subtitle">Resiliency &amp; Performance Optimization</span>
+  <button id="btnRestartTop" type="button" class="btn-outline-topbar hidden">Build another deck</button>
+</header>
+
+<main class="page">
+
+  <!-- Progress bar -->
+  <nav class="progress" aria-label="Progress">
+    <div class="progress-step">
+      <div id="stepCircle1" class="progress-circle active" aria-hidden="true">1</div>
+      <span id="stepLabel1" class="progress-label active">Upload</span>
+    </div>
+    <div id="connector1" class="progress-connector"></div>
+    <div class="progress-step">
+      <div id="stepCircle2" class="progress-circle upcoming" aria-hidden="true">2</div>
+      <span id="stepLabel2" class="progress-label">Analyze</span>
+    </div>
+    <div id="connector2" class="progress-connector"></div>
+    <div class="progress-step">
+      <div id="stepCircle3" class="progress-circle upcoming" aria-hidden="true">3</div>
+      <span id="stepLabel3" class="progress-label">Deck ready</span>
+    </div>
+  </nav>
+
+  <!-- ============= 1. UPLOAD STATE ============= -->
+  <section id="uploadState">
+    <div class="card">
+      <h1>Build a summary deck from an RPO Gem Auditor report</h1>
+      <p class="subtitle">Upload the Excel workbook exported by the RPO Gem Auditor. You'll get an executive PowerPoint and a JSON summary of the findings.</p>
+
+      <label id="dropzone" class="dropzone" for="fileInput">
+        <input type="file" id="fileInput" accept=".xlsx" />
+
+        <div id="dzEmptyState">
+          <div class="dropzone-icon" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M6 10l6-6 6 6"/><path d="M4 20h16"/></svg>
+          </div>
+          <div class="dropzone-title">Drop the RPO Gem Auditor report here</div>
+          <div class="dropzone-browse">or browse files</div>
+          <div id="dzHint" class="dropzone-hint">.xlsx workbook, e.g. Web_RPO_Audit_Report.xlsx</div>
+        </div>
+
+        <div id="dzFileState" class="file-row hidden">
+          <span class="file-icon" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15l2 2 4-4"/></svg>
+          </span>
+          <span class="file-meta">
+            <span id="dzFileName" class="file-name"></span>
+            <span id="dzFileSize" class="file-size"></span>
+          </span>
+          <button type="button" id="dzRemoveBtn" class="file-remove" aria-label="Remove file">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </label>
+
+      <div id="uploadError" class="inline-error hidden" role="alert">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+        <span id="uploadErrorText"></span>
+      </div>
+
+      <div class="fields-row">
+        <div class="field">
+          <label for="clientInput">Client name</label>
+          <input type="text" id="clientInput" placeholder="e.g. NetApp" />
+        </div>
+        <div class="field">
+          <label for="titleInput">Deck title (optional)</label>
+          <input type="text" id="titleInput" placeholder="Resiliency & Performance Optimization Review" />
+        </div>
+      </div>
+
+      <div class="actions-row">
+        <button type="button" id="btnBuild" class="btn-primary" disabled>Build deck →</button>
+      </div>
+    </div>
+
+    <div class="tiles">
+      <div class="tile">
+        <div class="tile-title">Risk &amp; score</div>
+        <div class="tile-desc">Overall risk and verified checks passing, at a glance</div>
+      </div>
+      <div class="tile">
+        <div class="tile-title">Gaps by area</div>
+        <div class="tile-desc">Where the failures sit across the RPO sections</div>
+      </div>
+      <div class="tile">
+        <div class="tile-title">Action plan</div>
+        <div class="tile-desc">Now / Next / Later fixes, with every failure in the appendix</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============= 2. ANALYZE STATE ============= -->
+  <section id="analyzeState" class="hidden">
+    <div class="card">
+      <div class="analyze-body">
+        <div class="spinner" aria-hidden="true"></div>
+        <div class="analyze-title" id="analyzeTitle" aria-live="polite">Analyzing…</div>
+        <div class="analyze-sub" aria-live="polite">Building your deck. This usually takes a few seconds.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============= 3. DECK READY STATE ============= -->
+  <section id="resultState" class="hidden">
+    <div class="card">
+      <div class="result-header">
+        <div class="result-heading">
+          <h1>Your deck is ready</h1>
+          <div class="result-subline">
+            <span id="resultClient"></span> · <span id="resultFileName" class="mono"></span>
+          </div>
+        </div>
+        <span id="riskPill" class="risk-pill"></span>
+      </div>
+
+      <div id="statsGrid" class="stats-grid">
+        <div class="stat-tile">
+          <div class="stat-number" id="statTotal">—</div>
+          <div class="stat-label">Checks audited</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-number" id="statPass" style="color: var(--green-text);">—</div>
+          <div class="stat-label">Verified passing</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-number" id="statFail" style="color: var(--red-text);">—</div>
+          <div class="stat-label">Failed</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-number" id="statNeedsEvidence" style="color: var(--blue-text);">—</div>
+          <div class="stat-label">Need evidence</div>
+        </div>
+      </div>
+
+      <div id="mismatchWarning" class="warning-callout hidden">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+        <span><strong>Check before presenting:</strong> the Gem Auditor report's summary tab doesn't match its checkpoint rows (<span id="mismatchCount"></span> counts differ). The deck uses the checkpoint rows.</span>
+      </div>
+
+      <div class="result-actions">
+        <button type="button" id="btnDownloadDeck" class="btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+          Download deck (.pptx)
+        </button>
+        <button type="button" id="btnDownloadJson" class="btn-outline">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+          Download JSON summary
+        </button>
+        <button type="button" id="btnDownloadZip" class="link-button">Download everything (.zip)</button>
+      </div>
+    </div>
+
+    <div id="sectionsCard" class="card sections-card">
+      <h2>Most failures sit in</h2>
+      <div id="sectionsList"></div>
+    </div>
+
+    <div class="actions-row">
+      <button type="button" id="btnRestartBottom" class="btn-outline">Build another deck</button>
+    </div>
+  </section>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // ---------- Element refs ----------
+  const topbarSubtitle = document.getElementById('topbarSubtitle');
+  const btnRestartTop = document.getElementById('btnRestartTop');
+
+  const uploadState = document.getElementById('uploadState');
+  const analyzeState = document.getElementById('analyzeState');
+  const resultState = document.getElementById('resultState');
+
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const dzEmptyState = document.getElementById('dzEmptyState');
+  const dzFileState = document.getElementById('dzFileState');
+  const dzFileName = document.getElementById('dzFileName');
+  const dzFileSize = document.getElementById('dzFileSize');
+  const dzRemoveBtn = document.getElementById('dzRemoveBtn');
+
+  const uploadError = document.getElementById('uploadError');
+  const uploadErrorText = document.getElementById('uploadErrorText');
+
+  const clientInput = document.getElementById('clientInput');
+  const titleInput = document.getElementById('titleInput');
+  const btnBuild = document.getElementById('btnBuild');
+
+  const analyzeTitle = document.getElementById('analyzeTitle');
+
+  const resultClient = document.getElementById('resultClient');
+  const resultFileName = document.getElementById('resultFileName');
+  const riskPill = document.getElementById('riskPill');
+  const statsGrid = document.getElementById('statsGrid');
+  const statTotal = document.getElementById('statTotal');
+  const statPass = document.getElementById('statPass');
+  const statFail = document.getElementById('statFail');
+  const statNeedsEvidence = document.getElementById('statNeedsEvidence');
+  const mismatchWarning = document.getElementById('mismatchWarning');
+  const mismatchCount = document.getElementById('mismatchCount');
+  const sectionsCard = document.getElementById('sectionsCard');
+  const sectionsList = document.getElementById('sectionsList');
+
+  const btnDownloadDeck = document.getElementById('btnDownloadDeck');
+  const btnDownloadJson = document.getElementById('btnDownloadJson');
+  const btnDownloadZip = document.getElementById('btnDownloadZip');
+  const btnRestartBottom = document.getElementById('btnRestartBottom');
+
+  const stepCircle = { 1: document.getElementById('stepCircle1'), 2: document.getElementById('stepCircle2'), 3: document.getElementById('stepCircle3') };
+  const stepLabel = { 1: document.getElementById('stepLabel1'), 2: document.getElementById('stepLabel2'), 3: document.getElementById('stepLabel3') };
+  const connector = { 1: document.getElementById('connector1'), 2: document.getElementById('connector2') };
+
+  const checkIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+
+  let selectedFile = null;
+  let createdObjectUrls = [];
+
+  // ---------- Progress bar ----------
+  function setProgress(activeStep) {
+    for (let i = 1; i <= 3; i++) {
+      const circle = stepCircle[i];
+      const label = stepLabel[i];
+      circle.classList.remove('active', 'done', 'upcoming');
+      label.classList.remove('active', 'done');
+      if (i < activeStep) {
+        circle.classList.add('done');
+        circle.innerHTML = checkIcon;
+        label.classList.add('done');
+      } else if (i === activeStep) {
+        circle.classList.add('active');
+        circle.textContent = String(i);
+        label.classList.add('active');
+      } else {
+        circle.classList.add('upcoming');
+        circle.textContent = String(i);
       }
+    }
+    connector[1].classList.toggle('done', activeStep > 1);
+    connector[2].classList.toggle('done', activeStep > 2);
+  }
+
+  // ---------- State switching ----------
+  function showUploadState() {
+    uploadState.classList.remove('hidden');
+    analyzeState.classList.add('hidden');
+    resultState.classList.add('hidden');
+    topbarSubtitle.classList.remove('hidden');
+    btnRestartTop.classList.add('hidden');
+    setProgress(1);
+  }
+
+  function showAnalyzeState(fileName) {
+    uploadState.classList.add('hidden');
+    analyzeState.classList.remove('hidden');
+    resultState.classList.add('hidden');
+    analyzeTitle.textContent = 'Analyzing ' + fileName + '…';
+    setProgress(2);
+  }
+
+  function showResultState() {
+    uploadState.classList.add('hidden');
+    analyzeState.classList.add('hidden');
+    resultState.classList.remove('hidden');
+    topbarSubtitle.classList.add('hidden');
+    btnRestartTop.classList.remove('hidden');
+    setProgress(3);
+  }
+
+  function resetAll() {
+    selectedFile = null;
+    fileInput.value = '';
+    dzEmptyState.classList.remove('hidden');
+    dzFileState.classList.add('hidden');
+    uploadError.classList.add('hidden');
+    clientInput.value = '';
+    titleInput.value = '';
+    btnBuild.disabled = true;
+    revokeObjectUrls();
+    showUploadState();
+  }
+
+  function revokeObjectUrls() {
+    createdObjectUrls.forEach(function (url) { URL.revokeObjectURL(url); });
+    createdObjectUrls = [];
+  }
+
+  // ---------- File helpers ----------
+  function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    const kb = bytes / 1024;
+    if (kb < 1024) return kb.toFixed(1) + ' KB';
+    return (kb / 1024).toFixed(1) + ' MB';
+  }
+
+  function showUploadError(message) {
+    uploadErrorText.textContent = message;
+    uploadError.classList.remove('hidden');
+  }
+
+  function clearUploadError() {
+    uploadError.classList.add('hidden');
+  }
+
+  function acceptFile(file) {
+    const isXlsx = /\.xlsx$/i.test(file.name);
+    if (!isXlsx) {
+      showUploadError('"' + file.name + '" is not an .xlsx workbook. Please upload the Excel report exported by the RPO Gem Auditor.');
+      return;
+    }
+    clearUploadError();
+    selectedFile = file;
+    dzEmptyState.classList.add('hidden');
+    dzFileState.classList.remove('hidden');
+    dzFileName.textContent = file.name;
+    dzFileSize.textContent = formatBytes(file.size);
+    btnBuild.disabled = false;
+  }
+
+  function removeFile() {
+    selectedFile = null;
+    fileInput.value = '';
+    dzFileState.classList.add('hidden');
+    dzEmptyState.classList.remove('hidden');
+    btnBuild.disabled = true;
+  }
+
+  // ---------- Dropzone events ----------
+  fileInput.addEventListener('change', function () {
+    if (fileInput.files && fileInput.files[0]) {
+      acceptFile(fileInput.files[0]);
+    }
+  });
+
+  dzRemoveBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    removeFile();
+  });
+
+  ['dragenter', 'dragover'].forEach(function (evtName) {
+    dropzone.addEventListener(evtName, function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.add('dragover');
     });
-  </script>
+  });
+
+  ['dragleave', 'dragend'].forEach(function (evtName) {
+    dropzone.addEventListener(evtName, function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.remove('dragover');
+    });
+  });
+
+  dropzone.addEventListener('drop', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    dropzone.classList.remove('dragover');
+    const files = e.dataTransfer && e.dataTransfer.files;
+    if (files && files[0]) {
+      acceptFile(files[0]);
+    }
+  });
+
+  // ---------- Build deck ----------
+  btnBuild.addEventListener('click', async function () {
+    if (!selectedFile) return;
+    clearUploadError();
+
+    const params = new URLSearchParams();
+    if (titleInput.value.trim()) params.set('title', titleInput.value.trim());
+    if (clientInput.value.trim()) params.set('client', clientInput.value.trim());
+
+    const body = new FormData();
+    body.append('file', selectedFile);
+
+    showAnalyzeState(selectedFile.name);
+
+    try {
+      const res = await fetch('/api/audit?' + params.toString(), { method: 'POST', body: body });
+      if (!res.ok) {
+        let detail = res.statusText;
+        try {
+          const err = await res.json();
+          if (err && err.detail) detail = err.detail;
+        } catch (parseErr) { /* keep statusText */ }
+        throw new Error(detail);
+      }
+      const blob = await res.blob();
+      await handleResultZip(blob, selectedFile.name);
+    } catch (err) {
+      showUploadState();
+      showUploadError(err && err.message ? err.message : 'Something went wrong while building the deck.');
+    }
+  });
+
+  // ---------- Result zip handling ----------
+  async function handleResultZip(blob, originalFileName) {
+    revokeObjectUrls();
+
+    const zipUrl = URL.createObjectURL(blob);
+    createdObjectUrls.push(zipUrl);
+    const zipDownloadName = originalFileName.replace(/\.xlsx$/i, '') + '_Summary.zip';
+
+    let pptxEntry = null, jsonEntry = null;
+    let zip = null;
+    try {
+      zip = await JSZip.loadAsync(blob);
+    } catch (e) {
+      zip = null;
+    }
+
+    if (zip) {
+      zip.forEach(function (relativePath, entry) {
+        if (!pptxEntry && /\.pptx$/i.test(relativePath)) pptxEntry = entry;
+        if (!jsonEntry && /\.json$/i.test(relativePath)) jsonEntry = entry;
+      });
+    }
+
+    let deckUrl = null, deckName = null, jsonUrl = null, jsonName = null, summary = null;
+
+    if (pptxEntry) {
+      const pptxBlob = await pptxEntry.async('blob');
+      deckUrl = URL.createObjectURL(pptxBlob);
+      createdObjectUrls.push(deckUrl);
+      deckName = pptxEntry.name.split('/').pop();
+    }
+
+    if (jsonEntry) {
+      const jsonText = await jsonEntry.async('string');
+      jsonName = jsonEntry.name.split('/').pop();
+      const jsonBlob = new Blob([jsonText], { type: 'application/json' });
+      jsonUrl = URL.createObjectURL(jsonBlob);
+      createdObjectUrls.push(jsonUrl);
+      try { summary = JSON.parse(jsonText); } catch (e) { summary = null; }
+    }
+
+    renderResult({
+      summary: summary,
+      deckUrl: deckUrl, deckName: deckName || (originalFileName.replace(/\.xlsx$/i, '') + '_Summary.pptx'),
+      jsonUrl: jsonUrl, jsonName: jsonName,
+      zipUrl: zipUrl, zipName: zipDownloadName,
+      originalFileName: originalFileName,
+    });
+  }
+
+  function sumTotals(totals) {
+    if (!totals) return 0;
+    return Object.keys(totals).reduce(function (acc, k) { return acc + (totals[k] || 0); }, 0);
+  }
+
+  function riskClass(risk) {
+    if (!risk) return 'medium';
+    const r = risk.toLowerCase();
+    if (r === 'high' || r === 'critical') return r;
+    if (r === 'low') return 'low';
+    return 'medium';
+  }
+
+  function countsDiffer(totals, reportedCounts) {
+    if (!reportedCounts || Object.keys(reportedCounts).length === 0) return 0;
+    const keys = new Set(Object.keys(totals || {}).concat(Object.keys(reportedCounts)));
+    let diff = 0;
+    keys.forEach(function (k) {
+      const a = (totals && totals[k]) || 0;
+      const b = reportedCounts[k] || 0;
+      if (a !== b) diff++;
+    });
+    return diff;
+  }
+
+  function renderResult(data) {
+    const summary = data.summary;
+
+    resultFileName.textContent = data.originalFileName;
+    resultClient.textContent = clientInput.value.trim() || (summary && summary.entities && summary.entities.length ? summary.entities.join(', ') : 'Findings & Recommended Plan');
+
+    btnDownloadDeck.onclick = function () { triggerDownload(data.deckUrl, data.deckName); };
+    btnDownloadDeck.disabled = !data.deckUrl;
+
+    if (data.jsonUrl) {
+      btnDownloadJson.classList.remove('hidden');
+      btnDownloadJson.onclick = function () { triggerDownload(data.jsonUrl, data.jsonName); };
+    } else {
+      btnDownloadJson.classList.add('hidden');
+    }
+
+    btnDownloadZip.onclick = function () { triggerDownload(data.zipUrl, data.zipName); };
+
+    if (!summary) {
+      riskPill.classList.add('hidden');
+      statsGrid.classList.add('hidden');
+      mismatchWarning.classList.add('hidden');
+      sectionsCard.classList.add('hidden');
+      showResultState();
+      return;
+    }
+
+    riskPill.classList.remove('hidden');
+    statsGrid.classList.remove('hidden');
+    sectionsCard.classList.remove('hidden');
+
+    const totals = summary.totals || {};
+    const total = sumTotals(totals);
+    const pass = totals.PASS || 0;
+    const verifiable = summary.verifiable != null ? summary.verifiable : (pass + (totals.FAIL || 0) + (totals.PARTIAL || 0) + (totals['NOT CONFIGURED'] || 0));
+    const fail = totals.FAIL || 0;
+    const needsEvidence = totals['NEEDS EVIDENCE'] || 0;
+
+    statTotal.textContent = String(total);
+    statPass.textContent = pass + '/' + verifiable;
+    statFail.textContent = String(fail);
+    statNeedsEvidence.textContent = String(needsEvidence);
+
+    const risk = summary.risk || 'Medium';
+    riskPill.textContent = risk;
+    riskPill.className = 'risk-pill ' + riskClass(risk);
+
+    const reportedCounts = summary.reported && summary.reported.counts;
+    const diffCount = countsDiffer(totals, reportedCounts);
+    if (diffCount > 0) {
+      mismatchCount.textContent = String(diffCount);
+      mismatchWarning.classList.remove('hidden');
+    } else {
+      mismatchWarning.classList.add('hidden');
+    }
+
+    renderSections(summary.by_section || {});
+
+    showResultState();
+  }
+
+  function renderSections(bySection) {
+    sectionsList.innerHTML = '';
+    const entries = Object.keys(bySection)
+      .map(function (name) { return { name: name, fail: (bySection[name] && bySection[name].FAIL) || 0 }; })
+      .filter(function (e) { return e.fail > 0; })
+      .sort(function (a, b) { return b.fail - a.fail; })
+      .slice(0, 3);
+
+    if (entries.length === 0) {
+      sectionsCard.classList.add('hidden');
+      return;
+    }
+    sectionsCard.classList.remove('hidden');
+
+    const max = Math.max.apply(null, entries.map(function (e) { return e.fail; }));
+
+    entries.forEach(function (e) {
+      const row = document.createElement('div');
+      row.className = 'section-row';
+
+      const name = document.createElement('div');
+      name.className = 'section-name';
+      name.textContent = e.name;
+      name.title = e.name;
+
+      const track = document.createElement('div');
+      track.className = 'section-bar-track';
+      const fill = document.createElement('div');
+      fill.className = 'section-bar-fill';
+      const pct = max > 0 ? Math.max(6, Math.round((e.fail / max) * 100)) : 0;
+      fill.style.width = pct + '%';
+      track.appendChild(fill);
+
+      const count = document.createElement('div');
+      count.className = 'section-count';
+      count.textContent = String(e.fail);
+
+      row.appendChild(name);
+      row.appendChild(track);
+      row.appendChild(count);
+      sectionsList.appendChild(row);
+    });
+  }
+
+  function triggerDownload(url, filename) {
+    if (!url) return;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'download';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  // ---------- Restart ----------
+  btnRestartTop.addEventListener('click', resetAll);
+  btnRestartBottom.addEventListener('click', resetAll);
+
+  // ---------- Init ----------
+  showUploadState();
+})();
+</script>
 </body>
 </html>
