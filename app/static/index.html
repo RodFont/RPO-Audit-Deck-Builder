@@ -225,6 +225,10 @@
     border-color: var(--amber);
     background: var(--amber-bg);
   }
+  .dropzone.disabled {
+    opacity: 0.6;
+    pointer-events: none;
+  }
   .dropzone input[type="file"] {
     position: absolute;
     width: 1px;
@@ -476,7 +480,18 @@
     gap: 16px;
     flex-wrap: wrap;
   }
-  .result-heading h1 { margin-bottom: 4px; }
+  .result-heading h1 { margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+  .result-heading-check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--green);
+    color: #FFFFFF;
+    flex: none;
+  }
   .result-subline {
     font-size: 14px;
     color: var(--text-secondary);
@@ -632,17 +647,17 @@
   <!-- Progress bar -->
   <nav class="progress" aria-label="Progress">
     <div class="progress-step">
-      <div id="stepCircle1" class="progress-circle active" aria-hidden="true">1</div>
+      <div id="stepCircle1" class="progress-circle active">1</div>
       <span id="stepLabel1" class="progress-label active">Upload</span>
     </div>
     <div id="connector1" class="progress-connector"></div>
     <div class="progress-step">
-      <div id="stepCircle2" class="progress-circle upcoming" aria-hidden="true">2</div>
+      <div id="stepCircle2" class="progress-circle upcoming">2</div>
       <span id="stepLabel2" class="progress-label">Analyze</span>
     </div>
     <div id="connector2" class="progress-connector"></div>
     <div class="progress-step">
-      <div id="stepCircle3" class="progress-circle upcoming" aria-hidden="true">3</div>
+      <div id="stepCircle3" class="progress-circle upcoming">3</div>
       <span id="stepLabel3" class="progress-label">Deck ready</span>
     </div>
   </nav>
@@ -687,7 +702,7 @@
       <div class="fields-row">
         <div class="field">
           <label for="clientInput">Client name</label>
-          <input type="text" id="clientInput" placeholder="e.g. NetApp" />
+          <input type="text" id="clientInput" placeholder="e.g. Akamai" />
         </div>
         <div class="field">
           <label for="titleInput">Deck title (optional)</label>
@@ -722,7 +737,8 @@
       <div class="analyze-body">
         <div class="spinner" aria-hidden="true"></div>
         <div class="analyze-title" id="analyzeTitle" aria-live="polite">Analyzing…</div>
-        <div class="analyze-sub" aria-live="polite">Building your deck. This usually takes a few seconds.</div>
+        <div class="analyze-sub">Building your deck. This usually takes a few seconds.</div>
+        <div class="analyze-sub" id="analyzeElapsed" aria-live="polite">0s elapsed</div>
       </div>
     </div>
   </section>
@@ -732,7 +748,7 @@
     <div class="card">
       <div class="result-header">
         <div class="result-heading">
-          <h1>Your deck is ready</h1>
+          <h1 id="resultHeading" tabindex="-1"><span class="result-heading-check" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Your deck is ready</h1>
           <div class="result-subline">
             <span id="resultClient"></span> · <span id="resultFileName" class="mono"></span>
           </div>
@@ -782,9 +798,6 @@
       <div id="sectionsList"></div>
     </div>
 
-    <div class="actions-row">
-      <button type="button" id="btnRestartBottom" class="btn-outline">Build another deck</button>
-    </div>
   </section>
 
 </main>
@@ -835,7 +848,9 @@
   const btnDownloadDeck = document.getElementById('btnDownloadDeck');
   const btnDownloadJson = document.getElementById('btnDownloadJson');
   const btnDownloadZip = document.getElementById('btnDownloadZip');
-  const btnRestartBottom = document.getElementById('btnRestartBottom');
+
+  const resultHeading = document.getElementById('resultHeading');
+  const analyzeElapsed = document.getElementById('analyzeElapsed');
 
   const stepCircle = { 1: document.getElementById('stepCircle1'), 2: document.getElementById('stepCircle2'), 3: document.getElementById('stepCircle3') };
   const stepLabel = { 1: document.getElementById('stepLabel1'), 2: document.getElementById('stepLabel2'), 3: document.getElementById('stepLabel3') };
@@ -845,29 +860,73 @@
 
   let selectedFile = null;
   let createdObjectUrls = [];
+  let analyzeIntervalId = null;
+  let analyzeStartTime = null;
 
-  // ---------- Progress bar ----------
-  function setProgress(activeStep) {
+  // ---------- Stepper: the ONLY place that changes step state ----------
+  // state: "upload" | "analyze" | "ready"
+  const STEP_CONFIG = {
+    upload: ['active', 'upcoming', 'upcoming'],
+    analyze: ['done', 'active', 'upcoming'],
+    ready: ['done', 'done', 'done'],
+  };
+
+  function setStep(state) {
+    const statuses = STEP_CONFIG[state];
     for (let i = 1; i <= 3; i++) {
       const circle = stepCircle[i];
       const label = stepLabel[i];
+      const status = statuses[i - 1];
+
       circle.classList.remove('active', 'done', 'upcoming');
       label.classList.remove('active', 'done');
-      if (i < activeStep) {
+      circle.removeAttribute('aria-current');
+
+      if (status === 'done') {
         circle.classList.add('done');
         circle.innerHTML = checkIcon;
         label.classList.add('done');
-      } else if (i === activeStep) {
+      } else if (status === 'active') {
         circle.classList.add('active');
         circle.textContent = String(i);
         label.classList.add('active');
+        circle.setAttribute('aria-current', 'step');
       } else {
         circle.classList.add('upcoming');
         circle.textContent = String(i);
       }
     }
-    connector[1].classList.toggle('done', activeStep > 1);
-    connector[2].classList.toggle('done', activeStep > 2);
+    connector[1].classList.toggle('done', state === 'analyze' || state === 'ready');
+    connector[2].classList.toggle('done', state === 'ready');
+  }
+
+  // ---------- Form enable/disable ----------
+  function setFormDisabled(disabled) {
+    fileInput.disabled = disabled;
+    clientInput.disabled = disabled;
+    titleInput.disabled = disabled;
+    dropzone.classList.toggle('disabled', disabled);
+    btnBuild.disabled = disabled || !selectedFile;
+  }
+
+  // ---------- Elapsed-time timer ----------
+  function updateElapsed() {
+    const secs = Math.floor((Date.now() - analyzeStartTime) / 1000);
+    analyzeElapsed.textContent = secs + 's elapsed';
+  }
+
+  function startAnalyzeTimer() {
+    analyzeStartTime = Date.now();
+    updateElapsed();
+    stopAnalyzeTimer();
+    analyzeIntervalId = setInterval(updateElapsed, 1000);
+  }
+
+  function stopAnalyzeTimer() {
+    if (analyzeIntervalId) {
+      clearInterval(analyzeIntervalId);
+      analyzeIntervalId = null;
+    }
   }
 
   // ---------- State switching ----------
@@ -877,7 +936,9 @@
     resultState.classList.add('hidden');
     topbarSubtitle.classList.remove('hidden');
     btnRestartTop.classList.add('hidden');
-    setProgress(1);
+    stopAnalyzeTimer();
+    setFormDisabled(false);
+    setStep('upload');
   }
 
   function showAnalyzeState(fileName) {
@@ -885,16 +946,30 @@
     analyzeState.classList.remove('hidden');
     resultState.classList.add('hidden');
     analyzeTitle.textContent = 'Analyzing ' + fileName + '…';
-    setProgress(2);
+    setFormDisabled(true);
+    startAnalyzeTimer();
+    setStep('analyze');
   }
 
-  function showResultState() {
+  function showReadyState() {
     uploadState.classList.add('hidden');
     analyzeState.classList.add('hidden');
     resultState.classList.remove('hidden');
     topbarSubtitle.classList.add('hidden');
     btnRestartTop.classList.remove('hidden');
-    setProgress(3);
+    stopAnalyzeTimer();
+    setFormDisabled(false);
+    setStep('ready');
+    resultHeading.focus();
+  }
+
+  // The request or parsing failed: surface the error in the upload card
+  // and make sure the page never gets stuck on "Analyze".
+  function goToUploadWithError(message) {
+    stopAnalyzeTimer();
+    setFormDisabled(false);
+    showUploadState();
+    showUploadError(message);
   }
 
   function resetAll() {
@@ -905,7 +980,6 @@
     uploadError.classList.add('hidden');
     clientInput.value = '';
     titleInput.value = '';
-    btnBuild.disabled = true;
     revokeObjectUrls();
     showUploadState();
   }
@@ -1021,8 +1095,7 @@
       const blob = await res.blob();
       await handleResultZip(blob, selectedFile.name);
     } catch (err) {
-      showUploadState();
-      showUploadError(err && err.message ? err.message : 'Something went wrong while building the deck.');
+      goToUploadWithError(err && err.message ? err.message : 'Something went wrong while building the deck.');
     }
   });
 
@@ -1035,18 +1108,20 @@
     const zipDownloadName = originalFileName.replace(/\.xlsx$/i, '') + '_Summary.zip';
 
     let pptxEntry = null, jsonEntry = null;
-    let zip = null;
+    let zip;
     try {
       zip = await JSZip.loadAsync(blob);
     } catch (e) {
-      zip = null;
+      throw new Error('Could not read the generated file. Please try again.');
     }
 
-    if (zip) {
-      zip.forEach(function (relativePath, entry) {
-        if (!pptxEntry && /\.pptx$/i.test(relativePath)) pptxEntry = entry;
-        if (!jsonEntry && /\.json$/i.test(relativePath)) jsonEntry = entry;
-      });
+    zip.forEach(function (relativePath, entry) {
+      if (!pptxEntry && /\.pptx$/i.test(relativePath)) pptxEntry = entry;
+      if (!jsonEntry && /\.json$/i.test(relativePath)) jsonEntry = entry;
+    });
+
+    if (!pptxEntry) {
+      throw new Error('The generated file did not contain a PowerPoint deck.');
     }
 
     let deckUrl = null, deckName = null, jsonUrl = null, jsonName = null, summary = null;
@@ -1124,7 +1199,7 @@
       statsGrid.classList.add('hidden');
       mismatchWarning.classList.add('hidden');
       sectionsCard.classList.add('hidden');
-      showResultState();
+      showReadyState();
       return;
     }
 
@@ -1159,7 +1234,7 @@
 
     renderSections(summary.by_section || {});
 
-    showResultState();
+    showReadyState();
   }
 
   function renderSections(bySection) {
@@ -1218,7 +1293,6 @@
 
   // ---------- Restart ----------
   btnRestartTop.addEventListener('click', resetAll);
-  btnRestartBottom.addEventListener('click', resetAll);
 
   // ---------- Init ----------
   showUploadState();
