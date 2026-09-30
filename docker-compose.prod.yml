@@ -3,7 +3,7 @@
 # instead, which builds from source.
 services:
   app:
-    image: ${IMAGE:-ghcr.io/OWNER/REPO:latest}
+    image: ${IMAGE:-ghcr.io/rodfont/rpo-audit-deck-builder:latest}
     container_name: rpo-audit-app
     restart: unless-stopped
     env_file:
